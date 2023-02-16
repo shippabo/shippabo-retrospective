@@ -1,0 +1,29 @@
+{
+  "name": "@shippabo/retrospective",
+  "version": "0.0.0",
+  "repository": "https://github.com/shippabo/shippabo-retrospective",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "server"
+  ],
+  "scripts": {
+    "start:server": "yarn workspace @app/server start",
+    "start:frontend": "yarn workspace @app/frontend start",
+    "start": "yarn workspaces foreach -pi --from '{@app/frontend,@app/server}' run start"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "dependencies": {
+    "@app/frontend": "*",
+    "@app/server": "*"
+  },
+  "devDependencies": {
+    "prettier": "^2.7.1",
+    "typescript": "^4.6.3"
+  }
+}

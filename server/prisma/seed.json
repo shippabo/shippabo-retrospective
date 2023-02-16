@@ -1,0 +1,52 @@
+{
+  "sessions": [
+    {
+      "id": 1,
+      "name": "My First Session",
+      "createdAt": "2023-01-01T00:00:00.000Z",
+      "updatedAt": "2023-01-01T00:00:00.000Z"
+    }
+  ],
+  "users": [
+    {
+      "name": "Alan Turing",
+      "order": 1,
+      "sessionId": 1,
+      "isHost": true,
+      "createdAt": "2023-01-01T00:00:00.000Z",
+      "updatedAt": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "Tim Berners-Lee",
+      "order": 2,
+      "sessionId": 1,
+      "isHost": false,
+      "createdAt": "2023-01-01T00:00:00.000Z",
+      "updatedAt": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "Guido Van Rossum",
+      "order": 3,
+      "sessionId": 1,
+      "isHost": false,
+      "createdAt": "2023-01-01T00:00:00.000Z",
+      "updatedAt": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "Grace Hopper",
+      "order": 4,
+      "sessionId": 1,
+      "isHost": false,
+      "createdAt": "2023-01-01T00:00:00.000Z",
+      "updatedAt": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "Linus B. Torvalds",
+      "order": 5,
+      "sessionId": 1,
+      "isHost": false,
+      "createdAt": "2023-01-01T00:00:00.000Z",
+      "updatedAt": "2023-01-01T00:00:00.000Z"
+    }
+  ]
+}

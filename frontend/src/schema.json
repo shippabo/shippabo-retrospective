@@ -1,0 +1,232 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "User Randomizer API",
+    "description": "Local server for user randomizer"
+  },
+  "servers": [{ "url": "http://localhost:5001" }],
+  "components": {
+    "responses": {
+      "ValidationError": {
+        "description": "Validation error",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/ValidationError" } }
+        }
+      },
+      "NotFoundError": {
+        "description": "Not found error",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/NotFoundError" } }
+        }
+      },
+      "ServerError": { "description": "Internal server error" }
+    },
+    "schemas": {
+      "ValidationError": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string" } }
+      },
+      "NotFoundError": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string" } }
+      },
+      "User": {
+        "type": "object",
+        "required": ["id", "name", "order", "createdAt", "updatedAt", "sessionId"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "order": { "type": "integer" },
+          "createdAt": { "type": "string" },
+          "updatedAt": { "type": "string" },
+          "sessionId": { "type": "integer" }
+        }
+      },
+      "CreateSession": {
+        "type": "object",
+        "required": ["sessionName", "userName"],
+        "properties": { "sessionName": { "type": "string" }, "userName": { "type": "string" } }
+      },
+      "JoinSession": {
+        "type": "object",
+        "required": ["userName"],
+        "properties": { "userName": { "type": "string" } }
+      },
+      "Session": {
+        "type": "object",
+        "required": ["id", "name", "isActive", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "startedAt": { "type": "string" },
+          "stoppedAt": { "type": "string" },
+          "createdAt": { "type": "string" },
+          "updatedAt": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/session": {
+      "post": {
+        "description": "Create a new session",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/CreateSession" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Return a 200 status to indicate that session was created",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Session" } }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/session/{id}": {
+      "get": {
+        "description": "Get a session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Return a 200 status to indicate that session was created",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Session" } }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/session/{id}/users": {
+      "get": {
+        "description": "List users in a session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Return a 200 status to indicate request was successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/session/{id}/start": {
+      "post": {
+        "description": "Start a session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Return a 200 status to indicate that session was started",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Session" } }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/session/{id}/join": {
+      "post": {
+        "description": "Join a session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Session ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/JoinSession" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Return a 200 status to indicate that session was joined",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Session" } }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/session/{id}/stop": {
+      "post": {
+        "description": "Stop a session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Return a 200 status to indicate that session was stopped",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Session" } }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    }
+  }
+}
