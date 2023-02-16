@@ -14,7 +14,9 @@ model Session {
   stoppedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  User      User[]
+
+  User     User[]
+  Activity Activity[]
 }
 
 model User {
@@ -22,8 +24,18 @@ model User {
   name      String
   order     Int      @default(1)
   isHost    Boolean  @default(false)
-  session   Session  @relation(fields: [sessionId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   sessionId Int
+
+  session Session @relation(fields: [sessionId], references: [id])
+}
+
+model Activity {
+  id        Int      @id @default(autoincrement())
+  event     String
+  eventAt   DateTime @default(now())
+  sessionId Int
+
+  session Session @relation(fields: [sessionId], references: [id])
 }

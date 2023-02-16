@@ -1,19 +1,53 @@
 import { Express } from 'express';
+import { Server } from 'http';
+import { WebSocketServer } from 'ws';
+import { createActivityRepository } from './activity/repository';
+import { createActivityService } from './activity/service';
 
 import { NotFoundError, ValidationError } from './core/errors';
 import { createSessionRepository } from './session/repository';
 import { createSessionService, SessionService } from './session/service';
 import { createUserRepository } from './user/repository';
 import { createUserService } from './user/service';
+import { createSessionWebsocket } from './session/websocket';
 
-export const setupRoutes = (app: Express) => {
+export const setupRoutes = ({
+  expressApp,
+  httpServer,
+  websocketServer,
+}: {
+  expressApp: Express;
+  httpServer: Server;
+  websocketServer: WebSocketServer;
+}) => {
+  const activityRepository = createActivityRepository();
+  const activityService = createActivityService({ activityRepository });
+
   const userRepository = createUserRepository();
   const userService = createUserService({ userRepository });
 
+  const sessionWebsocket = createSessionWebsocket({ websocketServer });
   const sessionRepository = createSessionRepository();
-  const sessionService = createSessionService({ userService, sessionRepository });
+  const sessionService = createSessionService({
+    activityService,
+    userService,
+    sessionWebsocket,
+    sessionRepository,
+  });
 
-  app.post('/session', async (req, res) => {
+  httpServer.on('upgrade', (req, socket, head) => {
+    try {
+      websocketServer.handleUpgrade(req, socket, head, (ws) => {
+        websocketServer.emit('connection', ws);
+      });
+    } catch (err) {
+      console.error(err);
+
+      socket.destroy();
+    }
+  });
+
+  expressApp.post('/session', async (req, res) => {
     const { sessionName, userName } = req.body;
 
     if (!sessionName && typeof sessionName !== 'string') {
@@ -32,8 +66,8 @@ export const setupRoutes = (app: Express) => {
     res.status(200).json(result);
   });
 
-  app.get('/session/:id', async (req, res) => {
-    const sessionId = Number(req.params.id);
+  expressApp.get('/session/:sessionId', async (req, res) => {
+    const sessionId = Number(req.params.sessionId);
 
     if (!sessionId || Number.isNaN(sessionId)) {
       throw new NotFoundError('Session not found');
@@ -44,8 +78,8 @@ export const setupRoutes = (app: Express) => {
     res.status(200).json(result);
   });
 
-  app.get('/session/:id/users', async (req, res) => {
-    const sessionId = Number(req.params.id);
+  expressApp.get('/session/:sessionId/users', async (req, res) => {
+    const sessionId = Number(req.params.sessionId);
 
     if (!sessionId || Number.isNaN(sessionId)) {
       throw new NotFoundError('Session not found');
@@ -56,20 +90,37 @@ export const setupRoutes = (app: Express) => {
     res.status(200).json(users);
   });
 
-  app.post('/session/:id/start', async (req, res) => {
-    const sessionId = Number(req.params.id);
+  expressApp.get('/session/:sessionId/activities', async (req, res) => {
+    const sessionId = Number(req.params.sessionId);
 
     if (!sessionId || Number.isNaN(sessionId)) {
       throw new NotFoundError('Session not found');
     }
 
-    const session = await sessionService.startSession(sessionId);
+    const activities = await activityService.findActivitiesBySession(sessionId);
+
+    res.status(200).json(activities);
+  });
+
+  expressApp.post('/session/:sessionId/user/:userId/start', async (req, res) => {
+    const sessionId = Number(req.params.sessionId);
+    const userId = Number(req.params.userId);
+
+    if (!sessionId || Number.isNaN(sessionId)) {
+      throw new NotFoundError('Session not found');
+    }
+
+    if (!userId || Number.isNaN(userId)) {
+      throw new NotFoundError('User not found');
+    }
+
+    const session = await sessionService.startSession({ userId, sessionId });
 
     res.status(200).json(session);
   });
 
-  app.post('/session/:id/join', async (req, res) => {
-    const sessionId = Number(req.params.id);
+  expressApp.post('/session/:sessionId/join', async (req, res) => {
+    const sessionId = Number(req.params.sessionId);
 
     if (!sessionId || Number.isNaN(sessionId)) {
       throw new NotFoundError('Session not found');
@@ -89,14 +140,19 @@ export const setupRoutes = (app: Express) => {
     res.status(200).json(session);
   });
 
-  app.post('/session/:id/stop', async (req, res) => {
-    const sessionId = Number(req.params.id);
+  expressApp.post('/session/:sessionId/user/:userId/stop', async (req, res) => {
+    const sessionId = Number(req.params.sessionId);
+    const userId = Number(req.params.userId);
 
     if (!sessionId || Number.isNaN(sessionId)) {
       throw new NotFoundError('Session not found');
     }
 
-    const result = await sessionService.stopSession(sessionId);
+    if (!userId || Number.isNaN(userId)) {
+      throw new NotFoundError('Session not found');
+    }
+
+    const result = await sessionService.stopSession({ userId, sessionId });
 
     res.status(200).json(result);
   });

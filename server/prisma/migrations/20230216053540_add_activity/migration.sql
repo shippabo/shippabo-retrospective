@@ -1,0 +1,8 @@
+-- CreateTable
+CREATE TABLE "Activity" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "event" TEXT NOT NULL,
+    "eventAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "sessionId" INTEGER NOT NULL,
+    CONSTRAINT "Activity_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);

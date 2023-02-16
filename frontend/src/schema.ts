@@ -27,14 +27,14 @@ export interface paths {
       };
     };
   };
-  "/session/{id}": {
+  "/session/{sessionId}": {
     /** @description Get a session */
     get: {
       /** @description Get a session */
       parameters: {
           /** @description Session ID */
         path: {
-          id: number;
+          sessionId: number;
         };
       };
       responses: {
@@ -50,14 +50,14 @@ export interface paths {
       };
     };
   };
-  "/session/{id}/users": {
+  "/session/{sessionId}/users": {
     /** @description List users in a session */
     get: {
       /** @description List users in a session */
       parameters: {
           /** @description Session ID */
         path: {
-          id: number;
+          sessionId: number;
         };
       };
       responses: {
@@ -73,14 +73,39 @@ export interface paths {
       };
     };
   };
-  "/session/{id}/start": {
+  "/session/{sessionId}/activities": {
+    /** @description List activities in a session */
+    get: {
+      /** @description List activities in a session */
+      parameters: {
+          /** @description Session ID */
+        path: {
+          sessionId: number;
+        };
+      };
+      responses: {
+        /** @description Return a 200 status to indicate request was successful */
+        200: {
+          content: {
+            "application/json": (components["schemas"]["Activity"])[];
+          };
+        };
+        404: components["responses"]["NotFoundError"];
+        422: components["responses"]["ValidationError"];
+        500: components["responses"]["ServerError"];
+      };
+    };
+  };
+  "/session/{sessionId}/user/{userId}/start": {
     /** @description Start a session */
     post: {
       /** @description Start a session */
       parameters: {
           /** @description Session ID */
+          /** @description User ID */
         path: {
-          id: number;
+          sessionId: number;
+          userId: number;
         };
       };
       responses: {
@@ -96,14 +121,14 @@ export interface paths {
       };
     };
   };
-  "/session/{id}/join": {
+  "/session/{sessionId}/join": {
     /** @description Join a session */
     post: {
       /** @description Join a session */
       parameters: {
           /** @description Session ID */
         path: {
-          id: number;
+          sessionId: number;
         };
       };
       requestBody: {
@@ -115,7 +140,7 @@ export interface paths {
         /** @description Return a 200 status to indicate that session was joined */
         200: {
           content: {
-            "application/json": components["schemas"]["Session"];
+            "application/json": components["schemas"]["User"];
           };
         };
         404: components["responses"]["NotFoundError"];
@@ -124,14 +149,16 @@ export interface paths {
       };
     };
   };
-  "/session/{id}/stop": {
+  "/session/{sessionId}/user/{userId}/stop": {
     /** @description Stop a session */
     post: {
       /** @description Stop a session */
       parameters: {
           /** @description Session ID */
+          /** @description User ID */
         path: {
-          id: number;
+          sessionId: number;
+          userId: number;
         };
       };
       responses: {
@@ -159,10 +186,17 @@ export interface components {
     NotFoundError: {
       message: string;
     };
+    Activity: {
+      id: number;
+      event: string;
+      eventAt: string;
+      sessionId: number;
+    };
     User: {
       id: number;
       name: string;
       order: number;
+      isHost: boolean;
       createdAt: string;
       updatedAt: string;
       sessionId: number;

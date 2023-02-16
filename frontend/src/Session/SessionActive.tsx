@@ -1,15 +1,19 @@
 import React from 'react';
 
-import api, { Session, User } from '../api';
+import api, { Activity, Session, User } from '../api';
 import { useParams } from 'react-router';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid';
 import { Link } from 'react-router-dom';
 import UserList from '../User/UserList';
 import SessionJoin from './SessionJoin';
 import { isPast } from 'date-fns';
+import ActivityList from '../Activity/ActivityList';
+import { UserContext } from '../User/UserContext';
 
 export default function SessionActive() {
   const { sessionId: _sessionId } = useParams();
+
+  const { getSessionUser, setSessionUser } = React.useContext(UserContext);
 
   const [isJoining, setJoin] = React.useState(false);
 
@@ -20,13 +24,18 @@ export default function SessionActive() {
   const sessionId = Number(_sessionId);
 
   const [session, setSession] = React.useState<Session>();
+  const [activities, setActivities] = React.useState<Activity[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
+
+  const userId = getSessionUser(sessionId);
+
+  const user = React.useMemo(() => users.find((user) => user.id === userId), [users, userId]);
 
   React.useEffect(() => {
     api
-      .get('/session/{id}/users', {
+      .get('/session/{sessionId}/users', {
         params: {
-          id: sessionId,
+          sessionId,
         },
       })
       .then((res) => {
@@ -34,13 +43,31 @@ export default function SessionActive() {
           setUsers(res.data);
         }
       });
+
+    return api.subscribe('SESSION_USERS', ({ users }) => setUsers(users));
   }, [sessionId]);
 
   React.useEffect(() => {
     api
-      .get('/session/{id}', {
+      .get('/session/{sessionId}/activities', {
         params: {
-          id: Number(sessionId),
+          sessionId,
+        },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          setActivities(res.data);
+        }
+      });
+
+    return api.subscribe('SESSION_ACTIVITIES', ({ activities }) => setActivities(activities));
+  }, [sessionId]);
+
+  React.useEffect(() => {
+    api
+      .get('/session/{sessionId}', {
+        params: {
+          sessionId,
         },
       })
       .then((res) => {
@@ -48,6 +75,8 @@ export default function SessionActive() {
           setSession(res.data);
         }
       });
+
+    return api.subscribe('SESSION', ({ session }) => setSession(session));
   }, [sessionId]);
 
   const onJoinCancel = React.useCallback(() => {
@@ -59,31 +88,31 @@ export default function SessionActive() {
   }, []);
 
   const onStartSession = React.useCallback(async () => {
-    const startRes = await api.post('/session/{id}/start', {
+    if (!userId) {
+      throw new Error('Not a user of this session');
+    }
+
+    const res = await api.post('/session/{sessionId}/user/{userId}/start', {
       params: {
-        id: sessionId,
+        sessionId,
+        userId,
       },
     });
 
-    if (startRes.status === 200) {
-      setSession(startRes.data);
-
-      const usersRes = await api.get('/session/{id}/users', {
-        params: {
-          id: sessionId,
-        },
-      });
-
-      if (usersRes.status === 200) {
-        setUsers(usersRes.data);
-      }
+    if (res.status === 200) {
+      setSession(res.data);
     }
   }, []);
 
   const onStopSession = React.useCallback(async () => {
-    const { status, data } = await api.post('/session/{id}/stop', {
+    if (!userId) {
+      throw new Error('Not a user of this session');
+    }
+
+    const { status, data } = await api.post('/session/{sessionId}/user/{userId}/stop', {
       params: {
-        id: sessionId,
+        sessionId,
+        userId,
       },
     });
 
@@ -92,21 +121,14 @@ export default function SessionActive() {
     }
   }, []);
 
-  const onJoinSuccess = React.useCallback(async () => {
-    setJoin(false);
+  const onJoinSuccess = React.useCallback(
+    async (userId: number) => {
+      setJoin(false);
 
-    api
-      .get('/session/{id}/users', {
-        params: {
-          id: sessionId,
-        },
-      })
-      .then((res) => {
-        if (res.status === 200) {
-          setUsers(res.data);
-        }
-      });
-  }, [sessionId]);
+      setSessionUser(sessionId, userId);
+    },
+    [sessionId],
+  );
 
   return (
     <>
@@ -123,7 +145,10 @@ export default function SessionActive() {
             </Link>
 
             <div className="space-x-2">
-              {session?.startedAt && isPast(new Date(session.startedAt)) && !session?.stoppedAt ? (
+              {user?.isHost &&
+              session?.startedAt &&
+              isPast(new Date(session.startedAt)) &&
+              !session?.stoppedAt ? (
                 <button
                   onClick={onStopSession}
                   className="inline-flex rounded-full bg-slate-800 py-2 px-4 text-sm font-medium text-white hover:bg-slate-700"
@@ -132,7 +157,7 @@ export default function SessionActive() {
                 </button>
               ) : null}
 
-              {session && !session.stoppedAt ? (
+              {user?.isHost && !session?.stoppedAt ? (
                 <button
                   onClick={onStartSession}
                   className="inline-flex rounded-full bg-slate-800 py-2 px-4 text-sm font-medium text-white hover:bg-slate-700"
@@ -143,7 +168,7 @@ export default function SessionActive() {
                 </button>
               ) : null}
 
-              {session && !session.stoppedAt ? (
+              {!user && !session?.stoppedAt ? (
                 <button
                   onClick={onJoinSession}
                   className="inline-flex rounded-full bg-slate-800 py-2 px-4 text-sm font-medium text-white hover:bg-slate-700"
@@ -155,12 +180,20 @@ export default function SessionActive() {
           </header>
 
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h3 className="mt-6 text-lg leading-6 font-bold text-slate-100">
-              Current Users in "{session?.name}"
-            </h3>
+            <div className="grid md:grid-cols-2">
+              <div className="flex justify-between">
+                <h3 className="mt-6 text-lg leading-6 font-bold text-slate-100">
+                  {user ? `Welcome ${user.name}!` : ''}
+                </h3>
 
-            <div className="mt-6 grid md:grid-cols-2">
+                <h3 className="mt-6 text-lg leading-6 font-bold text-slate-100">{session?.name}</h3>
+              </div>
+            </div>
+
+            <div className="mt-6 grid md:grid-cols-2 space-x-8">
               <UserList users={users} />
+
+              <ActivityList activities={activities} />
             </div>
           </section>
         </div>

@@ -1,20 +1,32 @@
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
 import { ServerError } from './core/errors';
+import { setupHeartbeat } from './heartbeat';
 
 import { setupRoutes } from './routes';
 
-const app = express();
+const websocketServer = new WebSocketServer({
+  noServer: true,
+});
+
+const expressApp = express();
+
+const httpServer = createServer(expressApp);
+
 const port = 5001;
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(cors());
+expressApp.use(bodyParser.urlencoded({ extended: true }));
+expressApp.use(bodyParser.json());
+expressApp.use(cors());
 
-setupRoutes(app);
+setupHeartbeat(websocketServer);
 
-app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+setupRoutes({ expressApp, httpServer, websocketServer });
+
+expressApp.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   if (res.headersSent) {
     return next(err);
   }
@@ -28,6 +40,6 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+httpServer.listen(port, () => {
+  console.log(`App listening on port ${port}`);
 });

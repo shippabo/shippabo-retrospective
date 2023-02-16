@@ -33,13 +33,24 @@
         "required": ["message"],
         "properties": { "message": { "type": "string" } }
       },
+      "Activity": {
+        "type": "object",
+        "required": ["id", "event", "eventAt", "sessionId"],
+        "properties": {
+          "id": { "type": "integer" },
+          "event": { "type": "string" },
+          "eventAt": { "type": "string" },
+          "sessionId": { "type": "integer" }
+        }
+      },
       "User": {
         "type": "object",
-        "required": ["id", "name", "order", "createdAt", "updatedAt", "sessionId"],
+        "required": ["id", "name", "order", "isHost", "createdAt", "updatedAt", "sessionId"],
         "properties": {
           "id": { "type": "integer" },
           "name": { "type": "string" },
           "order": { "type": "integer" },
+          "isHost": { "type": "boolean" },
           "createdAt": { "type": "string" },
           "updatedAt": { "type": "string" },
           "sessionId": { "type": "integer" }
@@ -92,13 +103,13 @@
         }
       }
     },
-    "/session/{id}": {
+    "/session/{sessionId}": {
       "get": {
         "description": "Get a session",
         "parameters": [
           {
             "in": "path",
-            "name": "id",
+            "name": "sessionId",
             "schema": { "type": "integer" },
             "required": true,
             "description": "Session ID"
@@ -117,13 +128,13 @@
         }
       }
     },
-    "/session/{id}/users": {
+    "/session/{sessionId}/users": {
       "get": {
         "description": "List users in a session",
         "parameters": [
           {
             "in": "path",
-            "name": "id",
+            "name": "sessionId",
             "schema": { "type": "integer" },
             "required": true,
             "description": "Session ID"
@@ -147,16 +158,53 @@
         }
       }
     },
-    "/session/{id}/start": {
+    "/session/{sessionId}/activities": {
+      "get": {
+        "description": "List activities in a session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Return a 200 status to indicate request was successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Activity" }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/session/{sessionId}/user/{userId}/start": {
       "post": {
         "description": "Start a session",
         "parameters": [
           {
             "in": "path",
-            "name": "id",
+            "name": "sessionId",
             "schema": { "type": "integer" },
             "required": true,
             "description": "Session ID"
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "User ID"
           }
         ],
         "responses": {
@@ -172,13 +220,13 @@
         }
       }
     },
-    "/session/{id}/join": {
+    "/session/{sessionId}/join": {
       "post": {
         "description": "Join a session",
         "parameters": [
           {
             "in": "path",
-            "name": "id",
+            "name": "sessionId",
             "schema": { "type": "integer" },
             "required": true,
             "description": "Session ID"
@@ -194,7 +242,7 @@
           "200": {
             "description": "Return a 200 status to indicate that session was joined",
             "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Session" } }
+              "application/json": { "schema": { "$ref": "#/components/schemas/User" } }
             }
           },
           "404": { "$ref": "#/components/responses/NotFoundError" },
@@ -203,16 +251,23 @@
         }
       }
     },
-    "/session/{id}/stop": {
+    "/session/{sessionId}/user/{userId}/stop": {
       "post": {
         "description": "Stop a session",
         "parameters": [
           {
             "in": "path",
-            "name": "id",
+            "name": "sessionId",
             "schema": { "type": "integer" },
             "required": true,
             "description": "Session ID"
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": { "type": "integer" },
+            "required": true,
+            "description": "User ID"
           }
         ],
         "responses": {
