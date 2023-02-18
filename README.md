@@ -48,7 +48,7 @@ Server directory structure is grouped by high level concerns include:
 
 #### Client
 
-The client app is based in React and also written in typescript. It utilizes tailwindCSS for its styling framework, heroicons for its iconographic components, and headlessui for additional advanced UI interactions (such as pop up modals and CSS transitions). Additionally the app adheres to an open API scheme as defined in (schema.json)[frontend/src/schema.json] and supported by the backend server.
+The client app is based in React and also written in typescript. It utilizes tailwindCSS for its styling framework, heroicons for its iconographic components, and headlessui for additional advanced UI interactions (such as pop up modals and CSS transitions). Additionally the app adheres to an open API scheme as defined in [schema.json](frontend/src/schema.json) and supported by the backend server.
 
 Frontend directory structure is also grouped by Session or User concerns and includes the following major components:
 
@@ -57,4 +57,4 @@ Frontend directory structure is also grouped by Session or User concerns and inc
 - [SessionJoin.tsx](frontend/src/Session/SessionJoin.tsx) - Modal to allow users to join a session
 - [UserList.tsx](frontend/src/User/UserList.tsx) - Component for listing out participants in the session
 
-Additionally there are generated API definitions in (schema.ts)[frontend/src/schema.ts] that are utilized by a standardized server request interface managed in (schema.ts)[frontend/src/api.ts]
+Additionally there are generated API definitions in [schema.ts](frontend/src/schema.ts) that are utilized by a standardized server request interface managed in [schema.ts](frontend/src/api.ts)
