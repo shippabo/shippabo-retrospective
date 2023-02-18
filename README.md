@@ -57,4 +57,4 @@ Frontend directory structure is also grouped by Session or User concerns and inc
 - [SessionJoin.tsx](frontend/src/Session/SessionJoin.tsx) - Modal to allow users to join a session
 - [UserList.tsx](frontend/src/User/UserList.tsx) - Component for listing out participants in the session
 
-Additionally there are generated API definitions in [schema.ts](frontend/src/schema.ts) that are utilized by a standardized server request interface managed in [schema.ts](frontend/src/api.ts)
+Additionally there are generated API definitions in [schema.ts](frontend/src/schema.ts) that are utilized by a standardized server request interface managed in [api.ts](frontend/src/api.ts)
