@@ -8,15 +8,18 @@ import schema from './schema.json';
 
 import SessionCreate from './Session/SessionCreate';
 import SessionActive from './Session/SessionActive';
+import UserProvider from './User/UserContext';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<SessionCreate isOpen={true} />} />
-        <Route path="/session/:sessionId" element={<SessionActive />} />
-        <Route path="/api" element={<RedocStandalone spec={schema} />} />
-      </Routes>
-    </BrowserRouter>
+    <UserProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<SessionCreate isOpen={true} />} />
+          <Route path="/session/:sessionId" element={<SessionActive />} />
+          <Route path="/api" element={<RedocStandalone spec={schema} />} />
+        </Routes>
+      </BrowserRouter>
+    </UserProvider>
   </React.StrictMode>,
 );

@@ -1,23 +1,29 @@
 import { User, Session } from '@prisma/client';
+import { ActivityService } from '../activity/service';
 import { NotFoundError, ValidationError } from '../core/errors';
 import { UserService } from '../user/service';
-import { CreateSessionInput, JoinSessionInput } from './model';
+import { SessionEventType, SessionWebsocket } from './websocket';
+import { CreateSessionInput, JoinSessionInput, StartSessionInput, StopSessionInput } from './model';
 import { SessionRepository } from './repository';
 
 export interface SessionService {
   findSession(id: number): Promise<Session>;
   findSessionUsers(id: number): Promise<User[]>;
   createSession(input: CreateSessionInput): Promise<Session>;
-  startSession(id: number): Promise<Session>;
-  joinSession(input: JoinSessionInput): Promise<Session>;
-  stopSession(id: number): Promise<Session>;
+  startSession(input: StartSessionInput): Promise<Session>;
+  joinSession(input: JoinSessionInput): Promise<User>;
+  stopSession(input: StopSessionInput): Promise<Session>;
 }
 
 export const createSessionService = ({
+  sessionWebsocket,
   sessionRepository,
+  activityService,
   userService,
 }: {
+  sessionWebsocket: SessionWebsocket;
   sessionRepository: SessionRepository;
+  activityService: ActivityService;
   userService: UserService;
 }): SessionService => {
   const findSession = async (id: number) => {
@@ -53,24 +59,33 @@ export const createSessionService = ({
       name: input.sessionName,
     });
 
-    await userService.createUser({
+    const user = await userService.createUser({
       name: input.userName,
       sessionId: session.id,
       isHost: true,
       order: 1,
     });
 
+    await activityService.createActivity({
+      event: `${user.name} created session ${session.name}.`,
+      sessionId: session.id,
+    });
+
     return session;
   };
 
-  const startSession = async (id: number) => {
-    const session = await sessionRepository.updateSession(id, {
+  const startSession = async (input: StartSessionInput) => {
+    const { sessionId, userId } = input;
+
+    const session = await sessionRepository.updateSession(sessionId, {
       startedAt: new Date(),
     });
 
     if (!session) {
       throw new NotFoundError('Session does not exist');
     }
+
+    const user = await userService.findUser(userId);
 
     const users = await userService.findUsersBySession(session.id);
 
@@ -82,6 +97,16 @@ export const createSessionService = ({
     for (const { user, order } of randomize) {
       await userService.updateUser(user.id, { order });
     }
+
+    await activityService.createActivity({
+      event: `${user.name} started the session.`,
+      sessionId: session.id,
+    });
+
+    sessionWebsocket.publish(SessionEventType.SESSION, {
+      type: SessionEventType.SESSION,
+      session,
+    });
 
     return session;
   };
@@ -97,24 +122,60 @@ export const createSessionService = ({
 
     const users = await userService.findUsersBySession(sessionId);
 
-    await userService.createUser({
+    const user = await userService.createUser({
       sessionId,
       name: userName,
       isHost: false,
       order: users.length + 1,
     });
 
-    return session;
+    await activityService.createActivity({
+      event: `${user.name} joined session.`,
+      sessionId: session.id,
+    });
+
+    sessionWebsocket.publish(SessionEventType.SESSION_USERS, {
+      type: SessionEventType.SESSION_USERS,
+      sessionId,
+      users: [...users, user],
+    });
+
+    const activities = await activityService.findActivitiesBySession(sessionId);
+
+    sessionWebsocket.publish(SessionEventType.SESSION_ACTIVITIES, {
+      type: SessionEventType.SESSION_ACTIVITIES,
+      sessionId,
+      activities,
+    });
+
+    return user;
   };
 
-  const stopSession = async (id: number) => {
-    const session = await sessionRepository.updateSession(id, {
+  const stopSession = async (input: StopSessionInput) => {
+    const { sessionId, userId } = input;
+
+    const session = await sessionRepository.updateSession(sessionId, {
       stoppedAt: new Date(),
     });
 
     if (!session) {
       throw new NotFoundError('Session does not exist');
     }
+
+    const user = await userService.findUser(userId);
+
+    await activityService.createActivity({
+      event: `${user.name} stopped the session.`,
+      sessionId: session.id,
+    });
+
+    const activities = await activityService.findActivitiesBySession(sessionId);
+
+    sessionWebsocket.publish(SessionEventType.SESSION_ACTIVITIES, {
+      type: SessionEventType.SESSION_ACTIVITIES,
+      sessionId,
+      activities,
+    });
 
     return session;
   };

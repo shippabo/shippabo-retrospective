@@ -11,6 +11,10 @@ const prisma = new PrismaClient();
     );
 
     await prisma.$transaction(seed.users.map((user) => prisma.user.create({ data: user })));
+
+    await prisma.$transaction(
+      seed.activities.map((activity) => prisma.activity.create({ data: activity })),
+    );
   } catch (err) {
     console.error(err);
     process.exit(1);

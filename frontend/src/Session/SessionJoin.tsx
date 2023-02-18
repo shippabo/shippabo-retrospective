@@ -7,7 +7,7 @@ export type SessionJoinProps = {
   isOpen: boolean;
   sessionId: number;
   onClose?: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (userId: number) => void;
 };
 
 export default function SessionJoin(props: SessionJoinProps) {
@@ -30,15 +30,15 @@ export default function SessionJoin(props: SessionJoinProps) {
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      const res = await api.post('/session/{id}/join', {
+      const res = await api.post('/session/{sessionId}/join', {
         payload,
         params: {
-          id: sessionId,
+          sessionId,
         },
       });
 
       if (res.status === 200) {
-        onSuccess?.();
+        onSuccess?.(res.data.id);
       }
     },
     [payload],
